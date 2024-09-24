@@ -58,7 +58,7 @@ func deleteLastMessage(output Output.Sendable, answer models.Answer) {
 func SendAnswer(output Output.Sendable, answer models.Answer) tgbotapi.Message {
 	res := output.SendMessage(answer.ChatId)
 	if res.MessageID != 0 {
-		answer.User = answer.User.SaveLastMessage(answer.NextMessage.Id, res.MessageID)
+		answer.User = answer.User.SaveLastMessage(db, answer.NextMessage.Id, res.MessageID)
 	}
 	nextAnswer := answer.User.GenerateAnswer(db)
 

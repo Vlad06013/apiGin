@@ -21,8 +21,7 @@ type TgUser struct {
 	//LastMessage Message `json:"last_message" gorm:"foreignKey:LastMessageId;default:null"`
 }
 
-func (u TgUser) SaveLastMessage(LastMessageId int, LastTGMessageId int) TgUser {
-	var db = ConnectDB()
+func (u TgUser) SaveLastMessage(db *gorm.DB, LastMessageId int, LastTGMessageId int) TgUser {
 	u.LastMessageId = LastMessageId
 	u.LastTGMessageId = LastTGMessageId
 	db.Save(&u)
