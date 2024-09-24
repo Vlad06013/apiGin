@@ -1,6 +1,9 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/jinzhu/gorm"
+)
 
 type TgUser struct {
 	Id     uint   `json:"id" gorm:"primary_key;column:id"`
@@ -26,10 +29,9 @@ func (u TgUser) SaveLastMessage(LastMessageId int, LastTGMessageId int) TgUser {
 	return u
 }
 
-func (u TgUser) GenerateAnswer() Answer {
+func (u TgUser) GenerateAnswer(db *gorm.DB) Answer {
 	var lastMessage Message
 	var nextMessage Message
-	var db = ConnectDB()
 
 	answer := Answer{
 		User:   u,
@@ -53,11 +55,10 @@ func (u TgUser) GenerateAnswer() Answer {
 	return answer
 }
 
-func (u TgUser) GenerateAnswerByCallbackData(pressedButton any) Answer {
+func (u TgUser) GenerateAnswerByCallbackData(db *gorm.DB, pressedButton any) Answer {
 	fmt.Println(pressedButton)
 	var lastMessage Message
 	var nextMessage Message
-	var db = ConnectDB()
 
 	answer := Answer{
 		User:   u,
