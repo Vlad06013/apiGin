@@ -40,6 +40,7 @@ func main() {
 			user := telegram.SetUser(db, update.CallbackQuery.From.ID, update.CallbackQuery.From.UserName)
 			answer := user.GenerateAnswerByCallbackData(db, update.CallbackQuery.Data)
 			output := telegram.Start(&answer, bot)
+			go deleteLastMessage(output, answer)
 			SendAnswer(output, answer)
 		}
 	}
@@ -49,6 +50,10 @@ func main() {
 	//models.ConnectDB()
 
 	//router.Run(":8080")
+}
+
+func deleteLastMessage(output Output.Sendable, answer models.Answer) {
+	output.DeleteMessage(answer.ChatId, answer.User.LastTGMessageId)
 }
 func SendAnswer(output Output.Sendable, answer models.Answer) tgbotapi.Message {
 	res := output.SendMessage(answer.ChatId)
