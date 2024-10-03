@@ -11,13 +11,13 @@ import (
 func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbotapi.CallbackQuery) {
 
 	user := entity.InitUser(db, callbackQuery.From.ID, callbackQuery.From.UserName, bot.Bot)
-	answer := user.GenerateAnswer(db, bot.Bot, &callbackQuery.Data)
+	answer, callbackParsed := user.GenerateAnswer(db, bot.Bot, &callbackQuery.Data)
 	constructorParams := entity.ConstructorParams{
-		Answer:        answer,
-		BotApi:        bot.Api,
-		DB:            db,
-		CallBackQuery: &callbackQuery.Data,
-		Message:       &answer.NextMessage,
+		Answer:         answer,
+		BotApi:         bot.Api,
+		DB:             db,
+		CallBackParsed: &callbackParsed,
+		Message:        &answer.NextMessage,
 	}
 
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
@@ -29,7 +29,6 @@ func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbota
 		db,
 		bot,
 	}
-
 	go output.DeleteMessage(answer.ChatId, answer.User.BotHistory.LastTGMessageId)
 	go telegram.SendAnswer(&toSend)
 }

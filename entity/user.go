@@ -47,7 +47,7 @@ func (u TgUser) GetBotHistory(db *gorm.DB, bot *Bot) TgUserMessageHistory {
 	return historyEntity
 }
 
-func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, pressedButton *string) Answer {
+func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, pressedButton *string) (Answer, CallbackParsed) {
 
 	answerGenerator := AnswerGenerator{
 		User:         u,
@@ -56,8 +56,8 @@ func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, pressedButton *string) Ans
 		History:      *u.BotHistory,
 		CallBackData: pressedButton,
 	}
-	answer := answerGenerator.GenerateAnswer()
-	return answer
+	answer, callbackParsed := answerGenerator.GenerateAnswer()
+	return answer, callbackParsed
 }
 
 func (u TgUser) SaveLastMessage(db *gorm.DB, answer *Answer, LastTGMessageId int) TgUserMessageHistory {

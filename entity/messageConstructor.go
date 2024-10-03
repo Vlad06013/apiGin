@@ -10,6 +10,12 @@ import (
 	"strconv"
 )
 
+type CallbackParsed struct {
+	CallBackData *string
+	Filter       *string
+	Pointer      string
+	PointerID    string
+}
 type MessageConstructor struct {
 	Text     string
 	Type     string
@@ -20,45 +26,69 @@ type MessageConstructor struct {
 var message *Message
 var db *gorm.DB
 
-func GenerateButtons(keyboard models.Keyboard, callBackQuery *string) []tgbotapi.InlineKeyboardButton {
+func GenerateButtons(keyboard models.Keyboard, callBackParsed *CallbackParsed) []tgbotapi.InlineKeyboardButton {
 	var buttons, convertedButtons []tgbotapi.InlineKeyboardButton
 
 	if len(keyboard.Buttons) != 0 {
 		for _, b := range keyboard.Buttons {
-			buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(b.Text, b.CallbackData))
+			buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(b.Text, "mess_"+b.CallbackData))
 		}
 		convertedButtons = tgbotapi.NewInlineKeyboardRow(buttons...)
 	} else {
 
 		if keyboard.TableName != "" {
 
-			buttons = generateButtonsFromTable(&keyboard, callBackQuery)
+			buttons = generateButtonsFromTable(&keyboard, callBackParsed)
 			convertedButtons = tgbotapi.NewInlineKeyboardRow(buttons...)
 		}
 	}
 	return convertedButtons
 }
-func generateButtonsFromTable(keyboard *models.Keyboard, callBackQuery *string) []tgbotapi.InlineKeyboardButton {
+
+func queryToBtns(table string, btnTextKey string, btnCBDataKey string) (*sql.Rows, error) {
+
+	rows, err := db.Table(table).
+		Select([]string{btnTextKey, btnCBDataKey}).
+		Rows()
+	return rows, err
+}
+func generateButtonsFromTable(keyboard *models.Keyboard, callbackParsed *CallbackParsed) []tgbotapi.InlineKeyboardButton {
 
 	var buttons []tgbotapi.InlineKeyboardButton
 	var rows *sql.Rows
-	if callBackQuery != nil && keyboard.InputFilterField != "" {
-		rows, _ = db.Table(keyboard.TableName).
-			Where(keyboard.InputFilterField+"=?", callBackQuery).
-			Select([]string{keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData}).
-			Rows()
+	if callbackParsed != nil {
+		if callbackParsed.Filter != nil && keyboard.InputFilterField != "" {
+			rows, _ = db.Table(keyboard.TableName).
+				Where(keyboard.InputFilterField+"=?", callbackParsed.Filter).
+				Select([]string{keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData}).
+				Rows()
+		} else {
+			rows, _ = queryToBtns(keyboard.TableName, keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData)
+		}
 	} else {
-		rows, _ = db.Table(keyboard.TableName).
-			Select([]string{keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData}).
-			Rows()
+		rows, _ = queryToBtns(keyboard.TableName, keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData)
+
 	}
 
-	var buttonText string
-	var callbackData string
-	for rows.Next() {
-		rows.Scan(&buttonText, &callbackData)
-		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(buttonText, callbackData))
+	if rows != nil {
+		var buttonText, callbackData, callbackDataQuery, callbackDataValue, prefix string
+		if message.NextMessageId != 0 {
+			prefix = "mess"
+			messageId := strconv.FormatUint(uint64(message.NextMessageId), 10)
+			callbackDataQuery = prefix + "_" + messageId + "/filter_"
+
+		} else {
+			prefix = "query"
+			callbackDataQuery = prefix + "_"
+		}
+		for rows.Next() {
+			rows.Scan(&buttonText, &callbackDataValue)
+			callbackData = callbackDataQuery + callbackDataValue
+			buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(buttonText, callbackData))
+			fmt.Println(buttonText, callbackData)
+		}
 	}
+
 	callBackData := checkBackBtn()
 	fmt.Println("backData", callBackData)
 	if callBackData != "" {
@@ -68,6 +98,7 @@ func generateButtonsFromTable(keyboard *models.Keyboard, callBackQuery *string) 
 }
 
 func checkBackBtn() string {
+	//add user last filter in history and check btn in last msg
 	if message != nil {
 		value := strconv.FormatUint(uint64(message.Id), 10)
 		lastMessage, err := repository.GetMessageWithFilter(db, "next_message_id", value)
@@ -80,8 +111,9 @@ func checkBackBtn() string {
 	}
 	return ""
 }
+
 func addBackBtn(buttons []tgbotapi.InlineKeyboardButton, callback string) []tgbotapi.InlineKeyboardButton {
-	return addCustomBtn(buttons, "Назад", callback)
+	return addCustomBtn(buttons, "Назад", "mess_"+callback)
 }
 
 func addCustomBtn(buttons []tgbotapi.InlineKeyboardButton, text string, callback string) []tgbotapi.InlineKeyboardButton {
@@ -93,11 +125,12 @@ func NewMessageConstructor(constructorParams *ConstructorParams) *MessageConstru
 	db = constructorParams.DB
 	text := constructorParams.Answer.NextMessage.Text
 	messageType := constructorParams.Answer.NextMessage.Message.Type
-	callBackQuery := constructorParams.CallBackQuery
+	callBackParsed := constructorParams.CallBackParsed
 	if constructorParams.Message != nil {
 		message = constructorParams.Message
 	}
-	buttons := GenerateButtons(keyboard, callBackQuery)
+	buttons := GenerateButtons(keyboard, callBackParsed)
+
 	var message = &MessageConstructor{text, messageType, keyboard, buttons}
 	return message
 }

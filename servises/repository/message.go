@@ -26,10 +26,10 @@ func FirstMessage(db *gorm.DB) (*models.Message, error) {
 	return &firstMessage, err
 }
 
-func GetMessagable(db *gorm.DB, fromMessageId uint, callbackData any) models.TgMessagable {
+func GetMessagable(db *gorm.DB, callbackData string) models.TgMessagable {
+
 	messagable := models.TgMessagable{}
-	db.Where("from_message_id = ?", fromMessageId).
-		Where("callback_data = ?", callbackData).
+	db.Where("callback_data = ?", callbackData).
 		Preload("ToMessage").
 		Preload("ToMessage.Keyboard").
 		Preload("ToMessage.Keyboard.Buttons").
@@ -38,10 +38,24 @@ func GetMessagable(db *gorm.DB, fromMessageId uint, callbackData any) models.TgM
 	return messagable
 }
 
+//func GetMessagable(db *gorm.DB, fromMessageId uint, callbackData any) models.TgMessagable {
+//	messagable := models.TgMessagable{}
+//	db.Where("from_message_id = ?", fromMessageId).
+//		Where("callback_data = ?", callbackData).
+//		Preload("ToMessage").
+//		Preload("ToMessage.Keyboard").
+//		Preload("ToMessage.Keyboard.Buttons").
+//		First(&messagable)
+//
+//	return messagable
+//}
+
 func GetMessagableByNextMessage(db *gorm.DB, toMessageId uint) models.TgMessagable {
 	messagable := models.TgMessagable{}
 	db.Where("to_message_id = ?", toMessageId).
-		//Where("callback_data = ?", callbackData).
+		Preload("FromMessage").
+		Preload("FromMessage.Keyboard").
+		Preload("FromMessage.Keyboard.Buttons").
 		Preload("ToMessage").
 		Preload("ToMessage.Keyboard").
 		Preload("ToMessage.Keyboard.Buttons").

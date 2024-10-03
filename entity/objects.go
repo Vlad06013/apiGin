@@ -19,9 +19,9 @@ type ToSend struct {
 }
 
 type ConstructorParams struct {
-	Answer        Answer
-	BotApi        tgbotapi.BotAPI
-	DB            *gorm.DB
-	CallBackQuery *string
-	Message       *Message
+	Answer         Answer
+	BotApi         tgbotapi.BotAPI
+	DB             *gorm.DB
+	CallBackParsed *CallbackParsed
+	Message        *Message
 }

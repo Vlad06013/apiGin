@@ -18,7 +18,7 @@ func SendAnswer(toSend *entity.ToSend) tgbotapi.Message {
 	lastMessage, _ := repository.GetMessageById(toSend.DB, history.LastMessageId)
 	var lastMessageEntity = entity.Message{Message: *lastMessage}
 	if lastMessageEntity.CanSendNext() == true {
-		nextAnswer := toSend.Answer.User.GenerateAnswer(toSend.DB, toSend.Bot.Bot, nil)
+		nextAnswer, _ := toSend.Answer.User.GenerateAnswer(toSend.DB, toSend.Bot.Bot, nil)
 		toSend.Answer = nextAnswer
 		sendNextAnswer(toSend)
 	}
@@ -29,9 +29,10 @@ func SendAnswer(toSend *entity.ToSend) tgbotapi.Message {
 func sendNextAnswer(ToSend *entity.ToSend) {
 
 	constructorParams := entity.ConstructorParams{
-		Answer: ToSend.Answer,
-		BotApi: ToSend.Bot.Api,
-		DB:     ToSend.DB,
+		Answer:  ToSend.Answer,
+		BotApi:  ToSend.Bot.Api,
+		DB:      ToSend.DB,
+		Message: &ToSend.Answer.NextMessage,
 	}
 
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
