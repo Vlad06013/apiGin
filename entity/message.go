@@ -14,7 +14,6 @@ type Messagable struct {
 }
 
 func (m Message) CanSendNext() bool {
-	//fmt.Println("id", m.Id, "buttons", m.Keyboard.Buttons, "NextMessageId", m.NextMessageId, "TableName", m.Keyboard.TableName)
 	if len(m.Keyboard.Buttons) == 0 && m.NextMessageId != 0 && m.Keyboard.TableName == "" {
 		return true
 	}

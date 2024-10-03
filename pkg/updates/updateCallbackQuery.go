@@ -8,17 +8,18 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//func ReadCallbackQuery(db *gorm.DB, bot *BotApi, callback *tgbotapi.CallbackQuery) models.Answer {
-//	user := models.SetUser(db, callback.From.ID, callback.From.UserName)
-//	answer := user.GenerateAnswerByCallbackData(db, bot.Bot, callback.Data)
-//	return answer
-//}
-
 func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbotapi.CallbackQuery) {
 
-	user := entity.InitUser(db, callbackQuery.From.ID, callbackQuery.From.UserName)
-	answer := user.GenerateAnswerByCallbackData(db, bot.Bot, callbackQuery.Data)
-	messageConstruct := constructor.ConstructAnswerMessage(&answer, &bot.Api, db)
+	user := entity.InitUser(db, callbackQuery.From.ID, callbackQuery.From.UserName, bot.Bot)
+	answer := user.GenerateAnswer(db, bot.Bot, &callbackQuery.Data)
+	constructorParams := entity.ConstructorParams{
+		Answer:        answer,
+		BotApi:        bot.Api,
+		DB:            db,
+		CallBackQuery: &callbackQuery.Data,
+	}
+
+	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
 	output := entity.NewOutput(&messageConstruct, &bot.Api)
 	toSend := entity.ToSend{
 		answer,
@@ -27,7 +28,7 @@ func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbota
 		db,
 		bot,
 	}
-	telegram.SendAnswer(&toSend)
-	//result := telegram.SendAnswer(output, answer, bot, db)
 
+	go output.DeleteMessage(answer.ChatId, answer.User.BotHistory.LastTGMessageId)
+	go telegram.SendAnswer(&toSend)
 }

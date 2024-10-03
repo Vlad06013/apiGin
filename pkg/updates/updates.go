@@ -6,8 +6,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//var db *gorm.DB
-
 func CheckUpdates(bot *entity.BotApi, db *gorm.DB) {
 	botApi := bot.Api
 	u := tgbotapi.NewUpdate(0)

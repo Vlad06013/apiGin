@@ -11,7 +11,7 @@ type TgUser struct {
 	CreatedAt  any    `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt  any    `json:"updated_at" gorm:"column:updated_at"`
 
-	History []TgUserMessageHistory
+	//History []TgUserMessageHistory
 }
 
 type TgUserMessageHistory struct {

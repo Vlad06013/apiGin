@@ -24,7 +24,9 @@ func CreateUser(db *gorm.DB, u *models.TgUser) models.TgUser {
 func GetMessageHistory(db *gorm.DB, botId uint, TgUserId uint) (models.TgUserMessageHistory, error) {
 
 	var history models.TgUserMessageHistory
-	err := db.Table("tg_user_message_histories").Preload("LastMessage").Where("bot_id = ?", &botId).Where("tg_user_id = ?", &TgUserId).First(&history).Error
+	err := db.Table("tg_user_message_histories").
+		Preload("LastMessage").
+		Where("bot_id = ?", &botId).Where("tg_user_id = ?", &TgUserId).First(&history).Error
 	return history, err
 
 }

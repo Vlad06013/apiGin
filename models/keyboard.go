@@ -9,5 +9,6 @@ type Keyboard struct {
 	TableName               string `json:"table_name" gorm:"column:table_name"`
 	KeyToButtonText         string `json:"key_to_button_text" gorm:"column:key_to_button_text"`
 	KeyToButtonCallbackData string `json:"key_to_button_callback_data" gorm:"column:key_to_button_callback_data"`
+	InputFilterField        string `json:"input_filter_field" gorm:"column:input_filter_field"`
 	Buttons                 []Buttons
 }

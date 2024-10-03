@@ -10,9 +10,15 @@ import (
 
 func TextMessageHandler(db *gorm.DB, bot *entity.BotApi, message *tgbotapi.Message) {
 
-	user := entity.InitUser(db, message.From.ID, message.From.UserName)
-	answer := user.GenerateAnswer(db, bot.Bot)
-	messageConstruct := constructor.ConstructAnswerMessage(&answer, &bot.Api, db)
+	user := entity.InitUser(db, message.From.ID, message.From.UserName, bot.Bot)
+	answer := user.GenerateAnswer(db, bot.Bot, nil)
+	constructorParams := entity.ConstructorParams{
+		Answer: answer,
+		BotApi: bot.Api,
+		DB:     db,
+	}
+	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
+	//messageConstruct := constructor.ConstructAnswerMessage(&answer, &bot.Api, db, nil)
 	output := entity.NewOutput(&messageConstruct, &bot.Api)
 
 	toSend := entity.ToSend{

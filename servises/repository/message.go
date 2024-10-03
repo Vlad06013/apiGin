@@ -12,6 +12,7 @@ func GetMessageById(db *gorm.DB, messageId uint) (*models.Message, error) {
 	return &message, err
 
 }
+
 func FirstMessage(db *gorm.DB) (*models.Message, error) {
 	var firstMessage models.Message
 	err := db.Where("first_message = ?", true).Preload("Keyboard").Preload("Keyboard.Buttons").Find(&firstMessage).Error

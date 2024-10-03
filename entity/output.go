@@ -10,7 +10,7 @@ type Sendable interface {
 
 type SendMessage interface {
 	SendMessage(chatId int64) tgbotapi.Message
-	//DeleteMessage(chatId int64, messageID int) tgbotapi.Message
+	DeleteMessage(chatId int64, messageID int) tgbotapi.Message
 }
 type Output struct {
 	MessageConstructor
@@ -67,12 +67,11 @@ func (o *Output) sendTextMessage(chatId int64) tgbotapi.Message {
 //		res, _ := o.Bot.Send(msg)
 //		return res
 //	}
-//
-//	func (o *Output) DeleteMessage(chatId int64, messageID int) tgbotapi.Message {
-//		msg := tgbotapi.NewDeleteMessage(chatId, messageID)
-//		res, _ := o.Bot.Send(msg)
-//		return res
-//	}
+func (o *Output) DeleteMessage(chatId int64, messageID int) tgbotapi.Message {
+	msg := tgbotapi.NewDeleteMessage(chatId, messageID)
+	res, _ := o.Bot.Send(msg)
+	return res
+}
 func (o *Output) SendMessage(chatId int64) tgbotapi.Message {
 	res := o.sendTextMessage(chatId)
 	//res := o.sendAnimation(chatId)

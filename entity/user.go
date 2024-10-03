@@ -8,21 +8,25 @@ import (
 
 type TgUser struct {
 	models.TgUser
+	BotHistory *TgUserMessageHistory
 }
 
 type TgUserMessageHistory struct {
 	models.TgUserMessageHistory
+	NextMessage *models.Message
 }
 
-func InitUser(db *gorm.DB, tgID int64, name string) TgUser {
+func InitUser(db *gorm.DB, tgID int64, name string, bot *Bot) TgUser {
 	var user = models.TgUser{
 		TgUserId: tgID,
 		Name:     name,
 	}
-	if err := db.Where("tg_user_id = ?", user.TgUserId).Preload("History").Find(&user).Error; err != nil {
+	if err := db.Where("tg_user_id = ?", user.TgUserId).Find(&user).Error; err != nil {
 		user = repository.CreateUser(db, &user)
 	}
-	userEntity := TgUser{user}
+	userEntity := TgUser{user, nil}
+	history := userEntity.GetBotHistory(db, bot)
+	userEntity.BotHistory = &history
 	return userEntity
 }
 
@@ -31,76 +35,28 @@ func (u TgUser) GetBotHistory(db *gorm.DB, bot *Bot) TgUserMessageHistory {
 		BotId:    bot.Id,
 		TgUserId: u.Id,
 	}
+	var nextMessage models.Message
 	historyExist, err := repository.GetMessageHistory(db, history.BotId, history.TgUserId)
 	if err != nil {
 		history = repository.CreateMessageHistory(db, &history)
 	} else {
 		history = historyExist
 	}
-
-	var historyEntity = TgUserMessageHistory{history}
+	db.First(&nextMessage, history.LastMessage.NextMessageId)
+	var historyEntity = TgUserMessageHistory{history, &nextMessage}
 	return historyEntity
 }
 
-func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot) Answer {
-	var lastMessage, nextMessage *models.Message
-	history := u.GetBotHistory(db, bot)
-	answer := Answer{
+func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, pressedButton *string) Answer {
+
+	answerGenerator := AnswerGenerator{
 		User:         u,
-		BotHistoryId: history.Id,
-		ChatId:       u.TgUserId,
+		DB:           db,
+		Bot:          *bot,
+		History:      *u.BotHistory,
+		CallBackData: pressedButton,
 	}
-
-	if history.LastMessageId != 0 {
-		lastMessage, _ = repository.GetMessageById(db, history.LastMessageId)
-		if lastMessage != nil {
-			if lastMessage.NextMessageId != 0 {
-				nextMessage, _ = repository.GetMessageById(db, lastMessage.NextMessageId)
-			}
-		}
-	} else {
-		firstMessage, err := repository.FirstMessage(db)
-		if err == nil {
-			nextMessage = firstMessage
-		}
-	}
-	if lastMessage != nil {
-		answer.LastMessage = Message{*lastMessage}
-	}
-	if nextMessage != nil {
-		answer.NextMessage = Message{*nextMessage}
-	}
-	return answer
-}
-
-func (u TgUser) GenerateAnswerByCallbackData(db *gorm.DB, bot *Bot, pressedButton any) Answer {
-	var lastMessage, nextMessage *models.Message
-	history := u.GetBotHistory(db, bot)
-	answer := Answer{
-		User:         u,
-		BotHistoryId: history.Id,
-		ChatId:       u.TgUserId,
-	}
-
-	if history.LastMessageId != 0 {
-		lastMessage = &history.LastMessage
-	} else {
-		firstMessage, err := repository.FirstMessage(db)
-		if err == nil {
-			nextMessage = firstMessage
-		}
-	}
-	if lastMessage != nil {
-		answer.LastMessage = Message{*lastMessage}
-	}
-	if nextMessage != nil {
-		answer.NextMessage = Message{*nextMessage}
-	} else {
-		messagable := repository.GetMessagable(db, answer.LastMessage.Id, pressedButton)
-		answer.NextMessage = Message{*messagable.ToMessage}
-	}
-	//fmt.Println(answer.LastMessage)
-	//fmt.Println(answer.NextMessage)
+	answer := answerGenerator.GenerateAnswer()
 	return answer
 }
 
@@ -109,8 +65,8 @@ func (u TgUser) SaveLastMessage(db *gorm.DB, answer *Answer, LastTGMessageId int
 		LastMessageId:   answer.NextMessage.Id,
 		LastTGMessageId: LastTGMessageId,
 	}
-	history = repository.UpdateMessageHistory(db, answer.BotHistoryId, &history)
-	historyEntity := TgUserMessageHistory{history}
+	history = repository.UpdateMessageHistory(db, answer.User.BotHistory.Id, &history)
+	historyEntity := TgUserMessageHistory{history, nil}
 
 	return historyEntity
 }

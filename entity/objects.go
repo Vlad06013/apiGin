@@ -17,3 +17,10 @@ type ToSend struct {
 	DB                 *gorm.DB
 	Bot                *BotApi
 }
+
+type ConstructorParams struct {
+	Answer        Answer
+	BotApi        tgbotapi.BotAPI
+	DB            *gorm.DB
+	CallBackQuery *string
+}
