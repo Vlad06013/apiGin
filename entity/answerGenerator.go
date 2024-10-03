@@ -18,8 +18,7 @@ func (a AnswerGenerator) GenerateAnswer() Answer {
 	var lastMessage, nextMessage *models.Message
 
 	answer := Answer{
-		User: a.User,
-		//BotHistoryId: a.History.Id,
+		User:   a.User,
 		ChatId: a.User.TgUserId,
 	}
 	if a.CallBackData != nil {

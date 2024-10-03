@@ -17,6 +17,7 @@ func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbota
 		BotApi:        bot.Api,
 		DB:            db,
 		CallBackQuery: &callbackQuery.Data,
+		Message:       &answer.NextMessage,
 	}
 
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)

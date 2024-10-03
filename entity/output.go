@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -25,7 +26,10 @@ func (o *Output) sendTextMessage(chatId int64) tgbotapi.Message {
 		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(o.Buttons)
 	}
 
-	res, _ := o.Bot.Send(msg)
+	res, err := o.Bot.Send(msg)
+	if err != nil {
+		fmt.Println("sendError", err)
+	}
 
 	return res
 }
@@ -74,6 +78,7 @@ func (o *Output) DeleteMessage(chatId int64, messageID int) tgbotapi.Message {
 }
 func (o *Output) SendMessage(chatId int64) tgbotapi.Message {
 	res := o.sendTextMessage(chatId)
+
 	//res := o.sendAnimation(chatId)
 	return res
 

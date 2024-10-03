@@ -2,9 +2,12 @@ package entity
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/Vlad06013/apiGin/models"
+	"github.com/Vlad06013/apiGin/servises/repository"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jinzhu/gorm"
+	"strconv"
 )
 
 type MessageConstructor struct {
@@ -14,7 +17,10 @@ type MessageConstructor struct {
 	Buttons  []tgbotapi.InlineKeyboardButton
 }
 
-func GenerateButtons(keyboard models.Keyboard, db *gorm.DB, callBackQuery *string) []tgbotapi.InlineKeyboardButton {
+var message *Message
+var db *gorm.DB
+
+func GenerateButtons(keyboard models.Keyboard, callBackQuery *string) []tgbotapi.InlineKeyboardButton {
 	var buttons, convertedButtons []tgbotapi.InlineKeyboardButton
 
 	if len(keyboard.Buttons) != 0 {
@@ -26,13 +32,13 @@ func GenerateButtons(keyboard models.Keyboard, db *gorm.DB, callBackQuery *strin
 
 		if keyboard.TableName != "" {
 
-			buttons = generateButtonsFromTable(&keyboard, db, callBackQuery)
+			buttons = generateButtonsFromTable(&keyboard, callBackQuery)
 			convertedButtons = tgbotapi.NewInlineKeyboardRow(buttons...)
 		}
 	}
 	return convertedButtons
 }
-func generateButtonsFromTable(keyboard *models.Keyboard, db *gorm.DB, callBackQuery *string) []tgbotapi.InlineKeyboardButton {
+func generateButtonsFromTable(keyboard *models.Keyboard, callBackQuery *string) []tgbotapi.InlineKeyboardButton {
 
 	var buttons []tgbotapi.InlineKeyboardButton
 	var rows *sql.Rows
@@ -53,17 +59,45 @@ func generateButtonsFromTable(keyboard *models.Keyboard, db *gorm.DB, callBackQu
 		rows.Scan(&buttonText, &callbackData)
 		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(buttonText, callbackData))
 	}
+	callBackData := checkBackBtn()
+	fmt.Println("backData", callBackData)
+	if callBackData != "" {
+		buttons = addBackBtn(buttons, callBackData)
+	}
 	return buttons
 }
 
+func checkBackBtn() string {
+	if message != nil {
+		value := strconv.FormatUint(uint64(message.Id), 10)
+		lastMessage, err := repository.GetMessageWithFilter(db, "next_message_id", value)
+		if err == nil {
+			return strconv.FormatUint(uint64(lastMessage.Id), 10)
+		} else {
+			messagable := repository.GetMessagableByNextMessage(db, message.Id)
+			return strconv.FormatUint(uint64(messagable.FromMessageId), 10)
+		}
+	}
+	return ""
+}
+func addBackBtn(buttons []tgbotapi.InlineKeyboardButton, callback string) []tgbotapi.InlineKeyboardButton {
+	return addCustomBtn(buttons, "Назад", callback)
+}
+
+func addCustomBtn(buttons []tgbotapi.InlineKeyboardButton, text string, callback string) []tgbotapi.InlineKeyboardButton {
+	return append(buttons, tgbotapi.NewInlineKeyboardButtonData(text, callback))
+}
 func NewMessageConstructor(constructorParams *ConstructorParams) *MessageConstructor {
 
 	keyboard := constructorParams.Answer.NextMessage.Keyboard
-	db := constructorParams.DB
+	db = constructorParams.DB
 	text := constructorParams.Answer.NextMessage.Text
 	messageType := constructorParams.Answer.NextMessage.Message.Type
 	callBackQuery := constructorParams.CallBackQuery
-	buttons := GenerateButtons(keyboard, db, callBackQuery)
+	if constructorParams.Message != nil {
+		message = constructorParams.Message
+	}
+	buttons := GenerateButtons(keyboard, callBackQuery)
 	var message = &MessageConstructor{text, messageType, keyboard, buttons}
 	return message
 }

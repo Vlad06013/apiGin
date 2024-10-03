@@ -23,4 +23,5 @@ type ConstructorParams struct {
 	BotApi        tgbotapi.BotAPI
 	DB            *gorm.DB
 	CallBackQuery *string
+	Message       *Message
 }

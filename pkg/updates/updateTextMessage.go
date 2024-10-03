@@ -18,7 +18,6 @@ func TextMessageHandler(db *gorm.DB, bot *entity.BotApi, message *tgbotapi.Messa
 		DB:     db,
 	}
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
-	//messageConstruct := constructor.ConstructAnswerMessage(&answer, &bot.Api, db, nil)
 	output := entity.NewOutput(&messageConstruct, &bot.Api)
 
 	toSend := entity.ToSend{
@@ -29,6 +28,5 @@ func TextMessageHandler(db *gorm.DB, bot *entity.BotApi, message *tgbotapi.Messa
 		bot,
 	}
 	telegram.SendAnswer(&toSend)
-	//result := telegram.SendAnswer(output, answer, bot, db)
 
 }
