@@ -16,6 +16,7 @@ type ToSend struct {
 	Output             Sendable
 	DB                 *gorm.DB
 	Bot                *BotApi
+	CallBackParsed     *CallbackParsed
 }
 
 type ConstructorParams struct {

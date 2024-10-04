@@ -12,7 +12,7 @@ func SendAnswer(toSend *entity.ToSend) tgbotapi.Message {
 	result := toSend.Output.SendMessage(toSend.Answer.ChatId)
 	var history entity.TgUserMessageHistory
 	if result.MessageID != 0 {
-		history = toSend.Answer.User.SaveLastMessage(toSend.DB, &toSend.Answer, result.MessageID)
+		history = toSend.Answer.User.SaveLastMessage(toSend.DB, &toSend.Answer, toSend.CallBackParsed, result.MessageID)
 		toSend.Answer.User.BotHistory = &history
 	}
 	lastMessage, _ := repository.GetMessageById(toSend.DB, history.LastMessageId)

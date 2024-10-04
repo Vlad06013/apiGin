@@ -44,9 +44,9 @@ func UpdateMessageHistory(db *gorm.DB, id uint, fields *models.TgUserMessageHist
 	history := models.TgUserMessageHistory{Id: id}
 
 	db.First(&history)
-
 	history.LastMessageId = fields.LastMessageId
 	history.LastTGMessageId = fields.LastTGMessageId
+	history.LastQueryFilter = fields.LastQueryFilter
 
 	db.Save(&history)
 	db.Preload("LastMessage").First(&history)

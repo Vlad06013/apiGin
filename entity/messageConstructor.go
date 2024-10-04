@@ -2,7 +2,6 @@ package entity
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/Vlad06013/apiGin/models"
 	"github.com/Vlad06013/apiGin/servises/repository"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -45,32 +44,21 @@ func GenerateButtons(keyboard models.Keyboard, callBackParsed *CallbackParsed) [
 	return convertedButtons
 }
 
-func queryToBtns(table string, btnTextKey string, btnCBDataKey string) (*sql.Rows, error) {
-
-	rows, err := db.Table(table).
-		Select([]string{btnTextKey, btnCBDataKey}).
-		Rows()
-	return rows, err
-}
 func generateButtonsFromTable(keyboard *models.Keyboard, callbackParsed *CallbackParsed) []tgbotapi.InlineKeyboardButton {
 
 	var buttons []tgbotapi.InlineKeyboardButton
-	var rows *sql.Rows
-	if callbackParsed != nil {
-		if callbackParsed.Filter != nil && keyboard.InputFilterField != "" {
-			rows, _ = db.Table(keyboard.TableName).
-				Where(keyboard.InputFilterField+"=?", callbackParsed.Filter).
-				Select([]string{keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData}).
-				Rows()
-		} else {
-			rows, _ = queryToBtns(keyboard.TableName, keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData)
-		}
-	} else {
-		rows, _ = queryToBtns(keyboard.TableName, keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData)
+	var rows *gorm.DB
+	var res *sql.Rows
 
+	rows = db.Table(keyboard.TableName).
+		Select([]string{keyboard.KeyToButtonText, keyboard.KeyToButtonCallbackData})
+
+	if callbackParsed != nil && callbackParsed.Filter != nil && keyboard.InputFilterField != "" {
+		rows = rows.Where(keyboard.InputFilterField+"=?", callbackParsed.Filter).Where("description !=?", "")
 	}
+	res, _ = rows.Rows()
 
-	if rows != nil {
+	if res != nil {
 		var buttonText, callbackData, callbackDataQuery, callbackDataValue, prefix string
 		if message.NextMessageId != 0 {
 			prefix = "mess"
@@ -81,16 +69,14 @@ func generateButtonsFromTable(keyboard *models.Keyboard, callbackParsed *Callbac
 			prefix = "query"
 			callbackDataQuery = prefix + "_"
 		}
-		for rows.Next() {
-			rows.Scan(&buttonText, &callbackDataValue)
+		for res.Next() {
+			res.Scan(&buttonText, &callbackDataValue)
 			callbackData = callbackDataQuery + callbackDataValue
 			buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(buttonText, callbackData))
-			fmt.Println(buttonText, callbackData)
 		}
 	}
 
 	callBackData := checkBackBtn()
-	fmt.Println("backData", callBackData)
 	if callBackData != "" {
 		buttons = addBackBtn(buttons, callBackData)
 	}
@@ -103,7 +89,9 @@ func checkBackBtn() string {
 		value := strconv.FormatUint(uint64(message.Id), 10)
 		lastMessage, err := repository.GetMessageWithFilter(db, "next_message_id", value)
 		if err == nil {
-			return strconv.FormatUint(uint64(lastMessage.Id), 10)
+			if len(lastMessage.Keyboard.Buttons) != 0 || lastMessage.Keyboard.TableName != "" {
+				return strconv.FormatUint(uint64(lastMessage.Id), 10)
+			}
 		} else {
 			messagable := repository.GetMessagableByNextMessage(db, message.Id)
 			return strconv.FormatUint(uint64(messagable.FromMessageId), 10)

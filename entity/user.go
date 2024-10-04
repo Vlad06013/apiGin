@@ -60,10 +60,13 @@ func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, pressedButton *string) (An
 	return answer, callbackParsed
 }
 
-func (u TgUser) SaveLastMessage(db *gorm.DB, answer *Answer, LastTGMessageId int) TgUserMessageHistory {
+func (u TgUser) SaveLastMessage(db *gorm.DB, answer *Answer, callbackDataParsed *CallbackParsed, LastTGMessageId int) TgUserMessageHistory {
 	var history = models.TgUserMessageHistory{
 		LastMessageId:   answer.NextMessage.Id,
 		LastTGMessageId: LastTGMessageId,
+	}
+	if callbackDataParsed != nil && callbackDataParsed.Filter != nil {
+		history.LastQueryFilter = *callbackDataParsed.Filter
 	}
 	history = repository.UpdateMessageHistory(db, answer.User.BotHistory.Id, &history)
 	historyEntity := TgUserMessageHistory{history, nil}

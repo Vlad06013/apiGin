@@ -15,8 +15,8 @@ func GetMessageById(db *gorm.DB, messageId uint) (*models.Message, error) {
 
 func GetMessageWithFilter(db *gorm.DB, field string, value any) (*models.Message, error) {
 	var message models.Message
-	//err := db.Where(field+" = ?", value).Preload("Keyboard").Preload("Keyboard.Buttons").First(&message).Error
-	err := db.Where(field+" = ?", value).First(&message).Error
+	err := db.Where(field+" = ?", value).Preload("Keyboard").Preload("Keyboard.Buttons").First(&message).Error
+	//err := db.Where(field+" = ?", value).First(&message).Error
 	return &message, err
 }
 

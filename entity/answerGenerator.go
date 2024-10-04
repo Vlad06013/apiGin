@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"fmt"
 	"github.com/Vlad06013/apiGin/models"
 	"github.com/Vlad06013/apiGin/servises/repository"
 	"github.com/jinzhu/gorm"
@@ -60,8 +59,6 @@ func (a AnswerGenerator) answerOnTextMessage() (*models.Message, *models.Message
 }
 func (a AnswerGenerator) answerOnCallBackMessage() (*models.Message, *models.Message) {
 	var lastMessage, nextMessage *models.Message
-
-	fmt.Println("inputdata", *a.CallBackData)
 
 	if a.History.LastMessageId != 0 {
 		lastMessage, _ = repository.GetMessageById(a.DB, a.History.LastMessageId)

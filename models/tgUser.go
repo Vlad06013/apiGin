@@ -20,6 +20,7 @@ type TgUserMessageHistory struct {
 	BotId           uint    `json:"bot_id" gorm:"column:bot_id"`
 	LastMessageId   uint    `json:"last_message_id" gorm:"foreignKey:id;default:null;OnDelete:SET NULL;"`
 	LastTGMessageId int     `json:"last_tg_message_id" gorm:"column:last_tg_message_id;default:null;OnDelete:SET NULL;"`
+	LastQueryFilter string  `json:"last_query_filter" gorm:"column:last_query_filter;default:null;OnDelete:SET NULL;"`
 	LastMessage     Message `json:"last_message" gorm:"foreignKey:LastMessageId;default:null"`
 }
 

@@ -28,6 +28,7 @@ func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbota
 		output,
 		db,
 		bot,
+		&callbackParsed,
 	}
 	go output.DeleteMessage(answer.ChatId, answer.User.BotHistory.LastTGMessageId)
 	go telegram.SendAnswer(&toSend)

@@ -27,6 +27,7 @@ func TextMessageHandler(db *gorm.DB, bot *entity.BotApi, message *tgbotapi.Messa
 		output,
 		db,
 		bot,
+		nil,
 	}
 	telegram.SendAnswer(&toSend)
 
