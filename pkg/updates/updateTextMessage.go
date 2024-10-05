@@ -16,7 +16,7 @@ func TextMessageHandler(db *gorm.DB, bot *entity.BotApi, message *tgbotapi.Messa
 		Answer:  answer,
 		BotApi:  bot.Api,
 		DB:      db,
-		Message: &answer.NextMessage,
+		Message: answer.NextMessage,
 	}
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
 	output := entity.NewOutput(&messageConstruct, &bot.Api)

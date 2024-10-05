@@ -10,7 +10,7 @@ type Sendable interface {
 }
 
 type SendMessage interface {
-	SendMessage(chatId int64) tgbotapi.Message
+	SendMessage(chatId int64) *tgbotapi.Message
 	DeleteMessage(chatId int64, messageID int) tgbotapi.Message
 }
 type Output struct {
@@ -18,7 +18,7 @@ type Output struct {
 	Bot tgbotapi.BotAPI
 }
 
-func (o *Output) sendTextMessage(chatId int64) tgbotapi.Message {
+func (o *Output) sendTextMessage(chatId int64) *tgbotapi.Message {
 
 	msg := tgbotapi.NewMessage(chatId, o.Text)
 	msg.ParseMode = "HTML"
@@ -31,7 +31,19 @@ func (o *Output) sendTextMessage(chatId int64) tgbotapi.Message {
 		fmt.Println("sendError", err)
 	}
 
-	return res
+	return &res
+}
+func (o *Output) sendAlert(cbId *string, text string) tgbotapi.APIResponse {
+
+	msg := tgbotapi.NewCallbackWithAlert(*cbId, text)
+
+	res, err := o.Bot.Request(msg)
+
+	if err != nil {
+		fmt.Println("sendTGError", err)
+	}
+
+	return *res
 }
 
 //func (o *Output) sendAnimation(chatId int64) tgbotapi.Message {
@@ -76,11 +88,19 @@ func (o *Output) DeleteMessage(chatId int64, messageID int) tgbotapi.Message {
 	res, _ := o.Bot.Send(msg)
 	return res
 }
-func (o *Output) SendMessage(chatId int64) tgbotapi.Message {
-	res := o.sendTextMessage(chatId)
+func (o *Output) SendMessage(chatId int64) *tgbotapi.Message {
+	var sent *tgbotapi.Message
+	if o.Type == "message" {
+		sent = o.sendTextMessage(chatId)
+	}
+	if o.Type == "alert" {
+		o.sendAlert(o.MessageConstructor.CallBackID, o.MessageConstructor.Text)
+		sent = nil
+	}
+	fmt.Println(sent == nil)
 
 	//res := o.sendAnimation(chatId)
-	return res
+	return sent
 
 }
 func NewOutput(m *MessageConstructor, bot *tgbotapi.BotAPI) Sendable {

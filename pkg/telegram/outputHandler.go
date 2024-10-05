@@ -4,26 +4,27 @@ import (
 	"github.com/Vlad06013/apiGin/entity"
 	"github.com/Vlad06013/apiGin/servises/constructor"
 	"github.com/Vlad06013/apiGin/servises/repository"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func SendAnswer(toSend *entity.ToSend) tgbotapi.Message {
-
+func SendAnswer(toSend *entity.ToSend) {
 	result := toSend.Output.SendMessage(toSend.Answer.ChatId)
-	var history entity.TgUserMessageHistory
-	if result.MessageID != 0 {
-		history = toSend.Answer.User.SaveLastMessage(toSend.DB, &toSend.Answer, toSend.CallBackParsed, result.MessageID)
-		toSend.Answer.User.BotHistory = &history
-	}
-	lastMessage, _ := repository.GetMessageById(toSend.DB, history.LastMessageId)
-	var lastMessageEntity = entity.Message{Message: *lastMessage}
-	if lastMessageEntity.CanSendNext() == true {
-		nextAnswer, _ := toSend.Answer.User.GenerateAnswer(toSend.DB, toSend.Bot.Bot, nil)
-		toSend.Answer = nextAnswer
-		sendNextAnswer(toSend)
+	if result != nil {
+
+		var history entity.TgUserMessageHistory
+		if result.MessageID != 0 {
+			history = toSend.Answer.User.SaveLastMessage(toSend.DB, &toSend.Answer, toSend.CallBackParsed, result.MessageID)
+			toSend.Answer.User.BotHistory = &history
+		}
+		lastMessage, _ := repository.GetMessageById(toSend.DB, history.LastMessageId)
+		var lastMessageEntity = entity.Message{Message: *lastMessage}
+		if lastMessageEntity.CanSendNext() == true {
+			nextAnswer, _ := toSend.Answer.User.GenerateAnswer(toSend.DB, toSend.Bot.Bot, nil)
+			toSend.Answer = nextAnswer
+			sendNextAnswer(toSend)
+		}
 	}
 
-	return result
+	//return result
 }
 
 func sendNextAnswer(ToSend *entity.ToSend) {
@@ -32,7 +33,7 @@ func sendNextAnswer(ToSend *entity.ToSend) {
 		Answer:  ToSend.Answer,
 		BotApi:  ToSend.Bot.Api,
 		DB:      ToSend.DB,
-		Message: &ToSend.Answer.NextMessage,
+		Message: ToSend.Answer.NextMessage,
 	}
 
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)

@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/Vlad06013/apiGin/models"
 	"github.com/Vlad06013/apiGin/servises/repository"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jinzhu/gorm"
 )
 
@@ -47,14 +48,15 @@ func (u TgUser) GetBotHistory(db *gorm.DB, bot *Bot) TgUserMessageHistory {
 	return historyEntity
 }
 
-func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, pressedButton *string) (Answer, CallbackParsed) {
+func (u TgUser) GenerateAnswer(db *gorm.DB, bot *Bot, callback *tgbotapi.CallbackQuery) (Answer, CallbackParsed) {
 
 	answerGenerator := AnswerGenerator{
-		User:         u,
-		DB:           db,
-		Bot:          *bot,
-		History:      *u.BotHistory,
-		CallBackData: pressedButton,
+		User:    u,
+		DB:      db,
+		Bot:     *bot,
+		History: *u.BotHistory,
+		//CallBackData: pressedButton,
+		CallBack: callback,
 	}
 	answer, callbackParsed := answerGenerator.GenerateAnswer()
 	return answer, callbackParsed

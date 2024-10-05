@@ -3,17 +3,19 @@ package entity
 import (
 	"github.com/Vlad06013/apiGin/models"
 	"github.com/Vlad06013/apiGin/servises/repository"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jinzhu/gorm"
 	"strconv"
 	"strings"
 )
 
 type AnswerGenerator struct {
-	User         TgUser
-	DB           *gorm.DB
-	Bot          Bot
-	History      TgUserMessageHistory
-	CallBackData *string
+	User     TgUser
+	DB       *gorm.DB
+	Bot      Bot
+	History  TgUserMessageHistory
+	CallBack *tgbotapi.CallbackQuery
+	//CallBackData *string
 }
 
 var cbParsed CallbackParsed
@@ -25,7 +27,7 @@ func (a AnswerGenerator) GenerateAnswer() (Answer, CallbackParsed) {
 		User:   a.User,
 		ChatId: a.User.TgUserId,
 	}
-	if a.CallBackData != nil {
+	if a.CallBack != nil {
 		lastMessage, nextMessage = a.answerOnCallBackMessage()
 	} else {
 		lastMessage, nextMessage = a.answerOnTextMessage()
@@ -34,7 +36,7 @@ func (a AnswerGenerator) GenerateAnswer() (Answer, CallbackParsed) {
 		answer.LastMessage = Message{Message: *lastMessage}
 	}
 	if nextMessage != nil {
-		answer.NextMessage = Message{Message: *nextMessage}
+		answer.NextMessage = &Message{Message: *nextMessage}
 	}
 	return answer, cbParsed
 
@@ -57,6 +59,7 @@ func (a AnswerGenerator) answerOnTextMessage() (*models.Message, *models.Message
 
 	return lastMessage, nextMessage
 }
+
 func (a AnswerGenerator) answerOnCallBackMessage() (*models.Message, *models.Message) {
 	var lastMessage, nextMessage *models.Message
 
@@ -64,7 +67,7 @@ func (a AnswerGenerator) answerOnCallBackMessage() (*models.Message, *models.Mes
 		lastMessage, _ = repository.GetMessageById(a.DB, a.History.LastMessageId)
 	}
 
-	if strings.Contains(*a.CallBackData, "_") {
+	if strings.Contains(a.CallBack.Data, "_") {
 		nextMessage = a.parseCallback()
 	}
 
@@ -97,9 +100,10 @@ func (a AnswerGenerator) answerOnCallBackMessage() (*models.Message, *models.Mes
 }
 func (a AnswerGenerator) parseCallback() *models.Message {
 
-	data := strings.Split(*a.CallBackData, "/")
+	data := strings.Split(a.CallBack.Data, "/")
 	params := strings.Split(data[0], "_")
 
+	cbParsed.Id = a.CallBack.ID
 	cbParsed.Pointer = params[0]
 	cbParsed.PointerID = params[1]
 
@@ -117,13 +121,16 @@ func (a AnswerGenerator) parseCallback() *models.Message {
 	if cbParsed.Pointer == "mess" {
 		nextMessage = parseMessBtn(a.DB, &cbParsed.PointerID)
 	}
+	if cbParsed.Pointer == "alert" {
+		nextMessage = nil
+	}
 
 	return nextMessage
 }
 
 func parseQueryBtn(a *AnswerGenerator) *models.Message {
 
-	messagable := repository.GetMessagable(a.DB, *a.CallBackData)
+	messagable := repository.GetMessagable(a.DB, a.CallBack.Data)
 	nextMessage := messagable.ToMessage
 	return nextMessage
 }

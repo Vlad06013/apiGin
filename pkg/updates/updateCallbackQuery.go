@@ -10,17 +10,20 @@ import (
 
 func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbotapi.CallbackQuery) {
 
+	//fmt.Println(callbackQuery.Data)
+
 	user := entity.InitUser(db, callbackQuery.From.ID, callbackQuery.From.UserName, bot.Bot)
-	answer, callbackParsed := user.GenerateAnswer(db, bot.Bot, &callbackQuery.Data)
+	answer, callbackParsed := user.GenerateAnswer(db, bot.Bot, callbackQuery)
 	constructorParams := entity.ConstructorParams{
 		Answer:         answer,
 		BotApi:         bot.Api,
 		DB:             db,
 		CallBackParsed: &callbackParsed,
-		Message:        &answer.NextMessage,
+		Message:        answer.NextMessage,
 	}
 
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
+
 	output := entity.NewOutput(&messageConstruct, &bot.Api)
 	toSend := entity.ToSend{
 		answer,
@@ -30,6 +33,8 @@ func CallbackQueryHandler(db *gorm.DB, bot *entity.BotApi, callbackQuery *tgbota
 		bot,
 		&callbackParsed,
 	}
-	go output.DeleteMessage(answer.ChatId, answer.User.BotHistory.LastTGMessageId)
+	if messageConstruct.Type != "alert" {
+		go output.DeleteMessage(answer.ChatId, answer.User.BotHistory.LastTGMessageId)
+	}
 	go telegram.SendAnswer(&toSend)
 }
