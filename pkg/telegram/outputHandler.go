@@ -24,7 +24,6 @@ func SendAnswer(toSend *entity.ToSend) {
 		}
 	}
 
-	//return result
 }
 
 func sendNextAnswer(ToSend *entity.ToSend) {
@@ -38,7 +37,7 @@ func sendNextAnswer(ToSend *entity.ToSend) {
 
 	messageConstruct := constructor.ConstructAnswerMessage(&constructorParams)
 	output := entity.NewOutput(&messageConstruct, &ToSend.Bot.Api)
-	ToSend.MessageConstructor = messageConstruct
+	ToSend.Constructable = messageConstruct
 	ToSend.Output = output
 	SendAnswer(ToSend)
 }

@@ -18,7 +18,7 @@ func CheckUpdates(bot *entity.BotApi, db *gorm.DB) {
 			TextMessageHandler(db, bot, update.Message)
 		}
 		if update.CallbackQuery != nil {
-			CallbackQueryHandler(db, bot, update.CallbackQuery)
+			//CallbackQueryHandler(db, bot, update.CallbackQuery)
 		}
 		//if update.MyChatMember != nil {
 		//	ReadMyChatMember(db,)

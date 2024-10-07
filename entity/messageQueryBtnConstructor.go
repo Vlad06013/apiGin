@@ -15,7 +15,8 @@ type CallbackParsed struct {
 	Pointer      string
 	PointerID    string
 }
-type MessageConstructor struct {
+
+type MessageQueryBtnConstructor struct {
 	Text       string
 	Type       string
 	Keyboard   *models.Keyboard
@@ -23,24 +24,27 @@ type MessageConstructor struct {
 	CallBackID *string
 }
 
-var message *Message
+var nextMessage *Message
 var db *gorm.DB
+
+func (m *MessageQueryBtnConstructor) TextMessage() *string {
+	return &m.Text
+}
+func (m *MessageQueryBtnConstructor) TypeMessage() string {
+	return m.Type
+}
+
+func (m *MessageQueryBtnConstructor) ButtonsMessage() []tgbotapi.InlineKeyboardButton {
+	return m.Buttons
+}
 
 func GenerateButtons(keyboard models.Keyboard, callBackParsed *CallbackParsed) []tgbotapi.InlineKeyboardButton {
 	var buttons, convertedButtons []tgbotapi.InlineKeyboardButton
 
-	if len(keyboard.Buttons) != 0 {
-		for _, b := range keyboard.Buttons {
-			buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(b.Text, "mess_"+b.CallbackData))
-		}
+	if keyboard.TableName != "" {
+
+		buttons = generateButtonsFromTable(&keyboard, callBackParsed)
 		convertedButtons = tgbotapi.NewInlineKeyboardRow(buttons...)
-	} else {
-
-		if keyboard.TableName != "" {
-
-			buttons = generateButtonsFromTable(&keyboard, callBackParsed)
-			convertedButtons = tgbotapi.NewInlineKeyboardRow(buttons...)
-		}
 	}
 	return convertedButtons
 }
@@ -65,9 +69,9 @@ func generateButtonsFromTable(keyboard *models.Keyboard, callbackParsed *Callbac
 
 func getDataPrefix() string {
 	var callbackDataQuery, prefix string
-	if message.NextMessageId != 0 {
+	if nextMessage.NextMessageId != 0 {
 		prefix = "mess"
-		messageId := strconv.FormatUint(uint64(message.NextMessageId), 10)
+		messageId := strconv.FormatUint(uint64(nextMessage.NextMessageId), 10)
 		callbackDataQuery = prefix + "_" + messageId + "/filter_"
 
 	} else {
@@ -116,15 +120,15 @@ func generateButtonsFromQueryWithFilter(keyboard *models.Keyboard, filter *strin
 
 func checkBackBtn() string {
 	//add user last filter in history and check btn in last msg
-	if message != nil {
-		value := strconv.FormatUint(uint64(message.Id), 10)
+	if nextMessage != nil {
+		value := strconv.FormatUint(uint64(nextMessage.Id), 10)
 		lastMessage, err := repository.GetMessageWithFilter(db, "next_message_id", value)
 		if err == nil {
 			if len(lastMessage.Keyboard.Buttons) != 0 || lastMessage.Keyboard.TableName != "" {
 				return strconv.FormatUint(uint64(lastMessage.Id), 10)
 			}
 		} else {
-			messagable := repository.GetMessagableByNextMessage(db, message.Id)
+			messagable := repository.GetMessagableByNextMessage(db, nextMessage.Id)
 			return strconv.FormatUint(uint64(messagable.FromMessageId), 10)
 		}
 	}
@@ -139,7 +143,7 @@ func addCustomBtn(buttons []tgbotapi.InlineKeyboardButton, text string, callback
 	return append(buttons, tgbotapi.NewInlineKeyboardButtonData(text, callback))
 }
 
-func NewMessageConstructor(constructorParams *ConstructorParams) *MessageConstructor {
+func NewMessageConstructor(constructorParams *ConstructorParams) Constructable {
 
 	keyboard := constructorParams.Answer.NextMessage.Keyboard
 	db = constructorParams.DB
@@ -147,11 +151,11 @@ func NewMessageConstructor(constructorParams *ConstructorParams) *MessageConstru
 	messageType := constructorParams.Answer.NextMessage.Message.Type
 	callBackParsed := constructorParams.CallBackParsed
 	if constructorParams.Message != nil {
-		message = constructorParams.Message
+		nextMessage = constructorParams.Message
 	}
 
 	buttons := GenerateButtons(keyboard, callBackParsed)
 
-	var message = &MessageConstructor{text, messageType, &keyboard, buttons, nil}
+	var message Constructable = &MessageQueryBtnConstructor{text, messageType, &keyboard, buttons, nil}
 	return message
 }

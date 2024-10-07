@@ -14,16 +14,17 @@ type SendMessage interface {
 	DeleteMessage(chatId int64, messageID int) tgbotapi.Message
 }
 type Output struct {
-	MessageConstructor
+	Constructable
 	Bot tgbotapi.BotAPI
 }
 
 func (o *Output) sendTextMessage(chatId int64) *tgbotapi.Message {
 
-	msg := tgbotapi.NewMessage(chatId, o.Text)
+	msg := tgbotapi.NewMessage(chatId, *o.Constructable.TextMessage())
 	msg.ParseMode = "HTML"
-	if len(o.Buttons) != 0 {
-		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(o.Buttons)
+	buttons := o.Constructable.ButtonsMessage()
+	if len(buttons) != 0 {
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(buttons)
 	}
 
 	res, err := o.Bot.Send(msg)
@@ -90,20 +91,19 @@ func (o *Output) DeleteMessage(chatId int64, messageID int) tgbotapi.Message {
 }
 func (o *Output) SendMessage(chatId int64) *tgbotapi.Message {
 	var sent *tgbotapi.Message
-	if o.Type == "message" {
+	if o.Constructable.TypeMessage() == "message" {
 		sent = o.sendTextMessage(chatId)
 	}
-	if o.Type == "alert" {
-		o.sendAlert(o.MessageConstructor.CallBackID, o.MessageConstructor.Text)
-		sent = nil
-	}
-	fmt.Println(sent == nil)
+	//if o.Type == "alert" {
+	//	o.sendAlert(o.MessageConstructor.CallBackID, o.MessageConstructor.Text)
+	//	sent = nil
+	//}
 
 	//res := o.sendAnimation(chatId)
 	return sent
 
 }
-func NewOutput(m *MessageConstructor, bot *tgbotapi.BotAPI) Sendable {
-	var output Sendable = &Output{*m, *bot}
+func NewOutput(c *Constructable, bot *tgbotapi.BotAPI) Sendable {
+	var output Sendable = &Output{*c, *bot}
 	return output
 }

@@ -11,12 +11,12 @@ type BotApi struct {
 }
 
 type ToSend struct {
-	Answer             Answer
-	MessageConstructor MessageConstructor
-	Output             Sendable
-	DB                 *gorm.DB
-	Bot                *BotApi
-	CallBackParsed     *CallbackParsed
+	Answer         Answer
+	Constructable  Constructable
+	Output         Sendable
+	DB             *gorm.DB
+	Bot            *BotApi
+	CallBackParsed *CallbackParsed
 }
 
 type ConstructorParams struct {
